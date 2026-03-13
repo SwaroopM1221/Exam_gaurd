@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'wouter';
-import { ShieldCheck, LogOut, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, LogOut, ArrowLeft, Sun, Moon } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 
 interface LayoutProps {
@@ -12,9 +12,27 @@ interface LayoutProps {
 
 export function Layout({ children, showNav = true, backLink, title }: LayoutProps) {
   const { isAuthenticated, logout } = useAuth();
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    setIsDark(isDarkMode);
+  }, []);
+
+  const toggleDarkMode = () => {
+    const newDark = !isDark;
+    setIsDark(newDark);
+    if (newDark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
       {showNav && (
         <header className="glass-panel sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -41,10 +59,18 @@ export function Layout({ children, showNav = true, backLink, title }: LayoutProp
             </div>
             
             <nav className="flex items-center gap-4 text-sm font-medium">
-              <Link href="/teacher" className="text-muted-foreground hover:text-foreground transition-colors">Teachers</Link>
-              <Link href="/student" className="text-muted-foreground hover:text-foreground transition-colors">Students</Link>
-              <Link href="/auditor" className="text-muted-foreground hover:text-foreground transition-colors">Auditors</Link>
+              <Link href="/teacher" className="text-foreground/80 dark:text-muted-foreground hover:text-primary transition-colors">Teachers</Link>
+              <Link href="/student" className="text-foreground/80 dark:text-muted-foreground hover:text-primary transition-colors">Students</Link>
+              <Link href="/auditor" className="text-foreground/80 dark:text-muted-foreground hover:text-primary transition-colors">Auditors</Link>
               
+              <button
+                onClick={toggleDarkMode}
+                className="p-2 rounded-lg hover:bg-muted transition-colors text-foreground/80 dark:text-muted-foreground hover:text-primary"
+                aria-label="Toggle dark mode"
+              >
+                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+
               {isAuthenticated && (
                 <button 
                   onClick={() => { logout(); window.location.href = '/auditor'; }}
@@ -64,7 +90,7 @@ export function Layout({ children, showNav = true, backLink, title }: LayoutProp
       </main>
       
       {showNav && (
-        <footer className="py-8 text-center text-sm text-muted-foreground mt-auto border-t border-border bg-white/50 backdrop-blur-sm">
+        <footer className="py-8 text-center text-sm text-muted-foreground mt-auto border-t border-border bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm">
           <p>© {new Date().getFullYear()} Exam Guardrail System. Academic Integrity First.</p>
         </footer>
       )}

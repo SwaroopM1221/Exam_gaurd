@@ -63,8 +63,8 @@ function TeacherAuthGate({ login }: { login: (token: string, username: string, f
   };
 
   return (
-    <Layout showNav={false}>
-      <div className="flex-1 flex items-center justify-center bg-gray-50 p-4 min-h-screen">
+    <Layout>
+      <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-slate-950/50 p-4 min-h-screen">
         <Card className="w-full max-w-md p-8 shadow-xl">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -77,13 +77,13 @@ function TeacherAuthGate({ login }: { login: (token: string, username: string, f
           <div className="flex bg-secondary rounded-xl p-1 mb-6">
             <button
               onClick={() => { setTab("signin"); setError(""); }}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === "signin" ? "bg-white shadow text-foreground" : "text-muted-foreground"}`}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === "signin" ? "bg-white dark:bg-slate-800 shadow text-foreground" : "text-muted-foreground"}`}
             >
               <LogIn className="w-4 h-4 inline mr-2" />Sign In
             </button>
             <button
               onClick={() => { setTab("signup"); setError(""); }}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === "signup" ? "bg-white shadow text-foreground" : "text-muted-foreground"}`}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === "signup" ? "bg-white dark:bg-slate-800 shadow text-foreground" : "text-muted-foreground"}`}
             >
               <UserPlus className="w-4 h-4 inline mr-2" />Register
             </button>

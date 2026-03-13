@@ -63,13 +63,46 @@
   --success-foreground: 210 40% 98%;
   
   --warning: 38 92% 50%;
-  --warning-foreground: 222 47% 11%;
+  --warning-foreground: 38 92% 10%;
   
   --border: 214 32% 91%;
   --input: 214 32% 91%;
   --ring: 238 62% 43%;
 
   --radius: 1rem;
+}
+
+.dark {
+  --background: 222 47% 4%;
+  --foreground: 210 40% 98%;
+
+  --card: 222 47% 6%;
+  --card-foreground: 210 40% 98%;
+
+  --popover: 222 47% 6%;
+  --popover-foreground: 210 40% 98%;
+
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+
+  --secondary: 217.2 32.6% 12.5%;
+  --secondary-foreground: 210 40% 98%;
+
+  --muted: 217.2 32.6% 12.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+
+  --accent: 217.2 32.6% 12.5%;
+  --accent-foreground: 210 40% 98%;
+
+  --destructive: 0 62.8% 30.6%;
+  --success-foreground: 210 40% 98%;
+
+  --warning: 45 93% 47%;
+  --warning-foreground: 210 40% 98%;
+
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 224.3 76.3% 48%;
 }
 
 @layer base {
@@ -81,6 +114,9 @@
     background-image: radial-gradient(circle at 50% 0%, hsl(238 62% 95%), transparent 70%);
     background-attachment: fixed;
   }
+  .dark body {
+    background-image: radial-gradient(circle at 50% 0%, hsl(222 47% 10%), transparent 70%);
+  }
   h1, h2, h3, h4, h5, h6 {
     @apply font-display tracking-tight text-foreground;
   }
@@ -88,10 +124,10 @@
 
 @layer utilities {
   .glass-card {
-    @apply bg-white/80 backdrop-blur-xl border border-white/40 shadow-xl shadow-black/[0.03];
+    @apply bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-xl shadow-black/[0.03];
   }
   .glass-panel {
-    @apply bg-white/60 backdrop-blur-md border-b border-white/40 shadow-sm;
+    @apply bg-white/60 dark:bg-slate-950/60 backdrop-blur-md border-b border-white/40 dark:border-white/10 shadow-sm;
   }
   .hide-scrollbar::-webkit-scrollbar {
     display: none;

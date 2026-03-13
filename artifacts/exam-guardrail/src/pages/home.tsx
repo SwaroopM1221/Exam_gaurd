@@ -41,7 +41,7 @@ export default function Home() {
               </Button>
             </Link>
             <Link href="/teacher" className="w-full sm:w-auto">
-              <Button size="lg" variant="outline" className="w-full text-base h-14 px-8 rounded-2xl bg-white/50 backdrop-blur-sm group">
+              <Button size="lg" variant="outline" className="w-full text-base h-14 px-8 rounded-2xl bg-white/50 dark:bg-white/10 backdrop-blur-sm group">
                 <ScrollText className="mr-2 w-5 h-5 group-hover:text-primary transition-colors" />
                 I am a Teacher
               </Button>
@@ -55,21 +55,21 @@ export default function Home() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto z-10"
         >
-          <div className="bg-white/60 backdrop-blur-md p-6 rounded-3xl border border-white/40 shadow-xl shadow-primary/5">
+          <div className="glass-card p-6 rounded-3xl">
             <div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-4">
               <MonitorCheck className="w-6 h-6" />
             </div>
             <h3 className="text-xl font-bold mb-2">Live Monitoring</h3>
             <p className="text-muted-foreground">Detects tab switching, window resizing, and forbidden keystrokes in real-time.</p>
           </div>
-          <div className="bg-white/60 backdrop-blur-md p-6 rounded-3xl border border-white/40 shadow-xl shadow-primary/5">
+          <div className="glass-card p-6 rounded-3xl">
             <div className="w-12 h-12 bg-accent/10 text-accent rounded-2xl flex items-center justify-center mb-4">
               <ShieldAlert className="w-6 h-6" />
             </div>
             <h3 className="text-xl font-bold mb-2">Trust Scoring</h3>
             <p className="text-muted-foreground">Automated behavioral analysis generates a reliable trust score for every session.</p>
           </div>
-          <div className="bg-white/60 backdrop-blur-md p-6 rounded-3xl border border-white/40 shadow-xl shadow-primary/5">
+          <div className="glass-card p-6 rounded-3xl">
             <div className="w-12 h-12 bg-warning/10 text-warning rounded-2xl flex items-center justify-center mb-4">
               <ScrollText className="w-6 h-6" />
             </div>
