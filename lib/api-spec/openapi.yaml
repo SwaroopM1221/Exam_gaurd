@@ -618,6 +618,18 @@ components:
           type: string
         status:
           type: string
+        violationBreakdown:
+          type: object
+          properties:
+            tabSwitches:
+              type: integer
+            windowResizes:
+              type: integer
+            keyboardAttempts:
+              type: integer
+            idleDetections:
+              type: integer
+          required: [tabSwitches, windowResizes, keyboardAttempts, idleDetections]
       required: [sessionId, studentId, usn, studentName, examId, examTitle, joinCode, trustScore, violationCount, joinedAt, status]
 
     AuditorSessionsResponse:

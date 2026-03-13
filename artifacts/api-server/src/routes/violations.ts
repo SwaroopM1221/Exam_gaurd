@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { violationsTable, studentsTable } from "@workspace/db";
+import { violationsTable, studentsTable, examSessionsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { LogViolationBody } from "@workspace/api-zod";
 
@@ -21,6 +21,36 @@ router.post("/violations", async (req, res) => {
   return res.status(201).json({
     ...violation,
     timestamp: violation.timestamp.toISOString(),
+  });
+});
+
+router.get("/violations/sessions/:sessionId/logs", async (req, res) => {
+  const sessionId = parseInt(req.params.sessionId);
+  if (isNaN(sessionId)) return res.status(400).json({ error: "Invalid session ID" });
+  
+  const [session] = await db
+    .select({
+      studentName: studentsTable.studentName,
+      usn: studentsTable.usn,
+    })
+    .from(examSessionsTable)
+    .innerJoin(studentsTable, eq(examSessionsTable.studentId, studentsTable.id))
+    .where(eq(examSessionsTable.id, sessionId));
+    
+  if (!session) return res.status(404).json({ error: "Session not found" });
+  
+  const violations = await db
+    .select()
+    .from(violationsTable)
+    .where(eq(violationsTable.sessionId, sessionId));
+    
+  return res.json({
+    studentName: session.studentName,
+    usn: session.usn,
+    violations: violations.map(v => ({
+      ...v,
+      timestamp: v.timestamp.toISOString(),
+    })),
   });
 });
 

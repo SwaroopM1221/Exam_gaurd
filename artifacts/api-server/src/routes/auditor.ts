@@ -64,7 +64,7 @@ router.get("/sessions", async (req, res) => {
       const violations = await db
         .select()
         .from(violationsTable)
-        .where(eq(violationsTable.studentId, s.studentId));
+        .where(eq(violationsTable.sessionId, s.sessionId));
 
       const tabSwitches = violations.filter(v => v.type === "TAB_SWITCH").length;
       const windowResizes = violations.filter(v => v.type === "WINDOW_RESIZE").length;
@@ -83,6 +83,12 @@ router.get("/sessions", async (req, res) => {
         joinedAt: s.joinedAt.toISOString(),
         trustScore,
         violationCount: violations.length,
+        violationBreakdown: {
+          tabSwitches,
+          windowResizes,
+          keyboardAttempts,
+          idleDetections,
+        }
       };
     })
   );

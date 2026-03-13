@@ -6,8 +6,8 @@ import { useExamMonitor } from "@/hooks/use-exam-monitor";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { motion } from "framer-motion";
-import { ShieldCheck, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ShieldCheck, Clock, AlertTriangle, CheckCircle2, Lock } from "lucide-react";
 
 // --- JOIN FORM ---
 
@@ -140,7 +140,7 @@ function ActiveExamView({ session, onFinish }: { session: any, onFinish: (score:
   const [answers, setAnswers] = useState<Record<number, string>>({});
   
   // Activate monitoring hooks
-  useExamMonitor(sessionId, studentId);
+  const { isTabSwitched, lockTimer } = useExamMonitor(sessionId, studentId);
 
   const [timeLeft, setTimeLeft] = useState(exam.duration * 60);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -195,6 +195,10 @@ function ActiveExamView({ session, onFinish }: { session: any, onFinish: (score:
     return () => clearInterval(timer);
   }, [timeLeft]);
 
+  const handlePreventDefault = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+  };
+
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -202,8 +206,73 @@ function ActiveExamView({ session, onFinish }: { session: any, onFinish: (score:
   };
 
   return (
-    <div className="flex-1 bg-background flex flex-col text-foreground">
-      {/* Exam Header bar (replaces standard nav) */}
+    <div 
+      className="flex-1 bg-background flex flex-col text-foreground relative min-h-screen"
+      onCopy={handlePreventDefault}
+      onPaste={handlePreventDefault}
+      onContextMenu={handlePreventDefault}
+    >
+      <AnimatePresence>
+        {isTabSwitched && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-3xl flex flex-col items-center justify-center p-6 text-center"
+          >
+            <motion.div 
+              initial={{ scale: 0.8, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="max-w-md w-full"
+            >
+              <div className="w-20 h-20 bg-destructive/10 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-destructive/20 relative">
+                <Lock className="w-10 h-10 text-destructive animate-pulse" />
+                {lockTimer > 0 && (
+                  <div className="absolute -top-2 -right-2 bg-destructive text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center border-2 border-slate-950">
+                    {lockTimer}s
+                  </div>
+                )}
+              </div>
+              
+              <h2 className="text-3xl font-black text-white mb-4 tracking-tight">EXAM LOCKED</h2>
+              
+              <div className="bg-slate-900/50 border border-white/5 rounded-2xl p-6 mb-8 backdrop-blur-md">
+                {lockTimer > 0 ? (
+                  <>
+                    <p className="text-rose-400 font-bold mb-2 uppercase tracking-widest text-sm">Security Violation Detected</p>
+                    <p className="text-slate-300 mb-4">Please wait for the security timeout to finish before resuming your exam.</p>
+                    <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                      <motion.div 
+                        initial={{ width: "100%" }}
+                        animate={{ width: "0%" }}
+                        transition={{ duration: lockTimer, ease: "linear" }}
+                        className="h-full bg-destructive shadow-[0_0_10px_rgba(225,29,72,0.5)]"
+                      />
+                    </div>
+                    <div className="flex justify-between mt-2 text-[10px] font-mono text-slate-500">
+                      <span>TIMEOUT ACTIVE</span>
+                      <span>{lockTimer}S REMAINING</span>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-slate-400 text-lg leading-relaxed">
+                    You have switched tabs or lost focus. This event has been logged for review. 
+                    <span className="block mt-2 font-bold text-white">Please return to this window to continue.</span>
+                  </p>
+                )}
+              </div>
+
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10 text-xs font-mono text-slate-500 uppercase tracking-widest">
+                <AlertTriangle className="w-3 h-3 text-amber-500" />
+                Integrity Monitoring Active
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className={`flex-1 flex flex-col transition-all duration-700 ${isTabSwitched ? 'grayscale blur-md scale-95 opacity-50' : ''}`}>
+        {/* Exam Header bar (replaces standard nav) */}
       <header className="bg-card border-b border-border sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <div>
@@ -282,6 +351,7 @@ function ActiveExamView({ session, onFinish }: { session: any, onFinish: (score:
           ))}
         </div>
       </main>
+      </div>
     </div>
   );
 }
