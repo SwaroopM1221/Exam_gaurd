@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Layout } from "@/components/layout";
 import { Card, Button, Input, Label, Badge } from "@/components/ui";
 import { useCreateExam, useTeacherSignIn, useTeacherSignUp, customFetch } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
-import { Plus, Trash2, Copy, CheckCircle2, LogIn, UserPlus, LogOut, GraduationCap, LayoutDashboard, FilePlus, Users, ChevronRight, Clock } from "lucide-react";
+import { Plus, Trash2, Copy, CheckCircle2, LogIn, UserPlus, LogOut, GraduationCap, LayoutDashboard, FilePlus, Users, ChevronRight, Clock, FileUp, Sparkles, AlertCircle, Loader2, BookOpen } from "lucide-react";
 import { z } from "zod";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -143,6 +143,14 @@ export default function TeacherPortal() {
   const [view, setView] = useState<"create" | "dashboard">("dashboard");
   const [createdExamCode, setCreatedExamCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  
+  // AI Generation State
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
+  const [questionTypes, setQuestionTypes] = useState<string[]>(["multiple_choice", "short_answer"]);
+  const [generationType, setGenerationType] = useState<"manual" | "ai">("manual");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const createExamMutation = useCreateExam();
 
@@ -154,11 +162,54 @@ export default function TeacherPortal() {
     }
   });
 
-  const { fields, append, remove } = useFieldArray({ control, name: "questions" });
+  const { fields, append, remove, replace } = useFieldArray({ control, name: "questions" });
 
   if (!isAuthenticated) {
     return <TeacherAuthGate login={login} />;
   }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type === "application/pdf") {
+      setUploadedFile(file);
+    } else {
+      alert("Please upload a valid PDF file.");
+    }
+  };
+
+  const generateAIQuestions = async () => {
+    if (!uploadedFile) return;
+    
+    setIsGenerating(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", uploadedFile);
+      formData.append("difficulty", difficulty);
+      formData.append("questionTypes", JSON.stringify(questionTypes));
+      
+      const response = await fetch("/api/teacher/generate-questions", {
+        method: "POST",
+        body: formData,
+      });
+      
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(responseData.error || "Generation failed");
+      }
+      
+      if (responseData.questions && Array.isArray(responseData.questions)) {
+        replace(responseData.questions);
+        setGenerationType("manual");
+        setUploadedFile(null);
+      }
+    } catch (err: any) {
+      console.error("AI Generation Error:", err);
+      alert(err.message || "Failed to generate questions. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const onSubmit = (data: ExamFormValues) => {
     const cleanedQuestions = data.questions.map(q => {
@@ -252,10 +303,30 @@ export default function TeacherPortal() {
                 <div className="max-w-4xl mx-auto">
                   <div className="mb-8 flex items-center justify-between">
                     <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <BookOpen className="w-5 h-5 text-primary" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-primary">Exam Creator</span>
+                      </div>
                       <h1 className="text-3xl font-bold text-foreground">Design Question Paper</h1>
-                      <p className="text-muted-foreground mt-2">Create an exam and generate a secure joining code.</p>
+                      <p className="text-muted-foreground mt-2">Create an exam manually or generate using AI from PDF.</p>
                     </div>
                     <div className="flex items-center gap-3">
+                      <div className="flex bg-secondary rounded-xl p-1 mr-4">
+                        <button
+                          type="button"
+                          onClick={() => setGenerationType("manual")}
+                          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${generationType === "manual" ? "bg-white dark:bg-slate-800 shadow text-foreground" : "text-muted-foreground"}`}
+                        >
+                          Manual
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setGenerationType("ai")}
+                          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${generationType === "ai" ? "bg-white dark:bg-slate-800 shadow text-primary flex items-center gap-2" : "text-muted-foreground flex items-center gap-2"}`}
+                        >
+                          <Sparkles className="w-4 h-4" /> AI Generate
+                        </button>
+                      </div>
                       <span className="text-sm text-muted-foreground">Signed in as <span className="font-semibold text-foreground">{fullName}</span></span>
                       <Button variant="ghost" size="sm" onClick={logout} className="text-muted-foreground hover:text-destructive">
                         <LogOut className="w-4 h-4 mr-1" /> Sign Out
@@ -263,151 +334,251 @@ export default function TeacherPortal() {
                     </div>
                   </div>
 
-                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-                    <Card className="space-y-6">
-                      <h3 className="text-xl font-semibold border-b pb-4">General Details</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <Label required>Exam Title</Label>
-                          <Input placeholder="e.g. Midterm Computer Science" {...register("title")} error={errors.title?.message} />
+                  {generationType === "ai" ? (
+                    <Card className="p-12 text-center border-dashed border-2 border-primary/20 bg-primary/5">
+                      <div className="max-w-md mx-auto space-y-8">
+                        <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto text-primary">
+                          <FileUp className="w-10 h-10" />
                         </div>
                         <div>
-                          <Label required>Teacher Name</Label>
-                          <Input placeholder="Prof. Smith" {...register("teacherName")} error={errors.teacherName?.message} />
+                          <h3 className="text-2xl font-bold mb-2">Upload Reference PDF</h3>
+                          <p className="text-muted-foreground">AI will analyze your document to generate relevant questions.</p>
                         </div>
-                        <div className="md:col-span-2">
-                          <Label>Description (Optional)</Label>
-                          <textarea
-                            className="w-full bg-background border-2 border-border rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all min-h-[100px]"
-                            placeholder="Instructions for students..."
-                            {...register("description")}
+
+                        <div className="grid grid-cols-3 gap-4">
+                          {(["easy", "medium", "hard"] as const).map((level) => (
+                            <button
+                              key={level}
+                              type="button"
+                              onClick={() => setDifficulty(level)}
+                              className={`py-3 rounded-xl text-sm font-bold capitalize border-2 transition-all ${difficulty === level ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-105" : "bg-card border-border hover:border-primary/50"}`}
+                            >
+                              {level}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="space-y-3 text-left">
+                          <Label className="text-sm font-bold ml-1">Question Types</Label>
+                          <div className="flex flex-wrap gap-2">
+                            {[
+                              { id: "multiple_choice", label: "MCQs" },
+                              { id: "true_false", label: "True/False" },
+                              { id: "short_answer", label: "Short Answer" }
+                            ].map((type) => (
+                              <button
+                                key={type.id}
+                                type="button"
+                                onClick={() => {
+                                  setQuestionTypes(prev => 
+                                    prev.includes(type.id) 
+                                      ? prev.filter(t => t !== type.id) 
+                                      : [...prev, type.id]
+                                  );
+                                }}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold border-2 transition-all ${questionTypes.includes(type.id) ? "bg-primary/10 border-primary text-primary" : "bg-card border-border text-muted-foreground hover:border-primary/30"}`}
+                              >
+                                {type.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div 
+                          onClick={() => fileInputRef.current?.click()}
+                          className={`p-10 border-2 border-dashed rounded-2xl cursor-pointer transition-all ${uploadedFile ? 'bg-success/5 border-success/30' : 'hover:border-primary/50 bg-card'}`}
+                        >
+                          <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            onChange={handleFileUpload} 
+                            accept=".pdf" 
+                            className="hidden" 
                           />
+                          {uploadedFile ? (
+                            <div className="flex items-center justify-center gap-3 text-success">
+                              <CheckCircle2 className="w-6 h-6" />
+                              <span className="font-semibold truncate max-w-[200px]">{uploadedFile.name}</span>
+                            </div>
+                          ) : (
+                            <div className="text-muted-foreground">
+                              <p className="font-semibold">Click to select PDF</p>
+                              <p className="text-xs mt-1">Maximum size 10MB</p>
+                            </div>
+                          )}
                         </div>
-                        <div>
-                          <Label required>Duration (Minutes)</Label>
-                          <Input type="number" placeholder="60" {...register("duration")} error={errors.duration?.message} />
+
+                        <Button 
+                          onClick={generateAIQuestions} 
+                          disabled={!uploadedFile || isGenerating}
+                          className="w-full py-6 text-lg gap-3"
+                        >
+                          {isGenerating ? (
+                            <>
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                              Analyzing Document...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-5 h-5" />
+                              Generate Question Paper
+                            </>
+                          )}
+                        </Button>
+
+                        <div className="flex items-center gap-2 justify-center text-xs text-muted-foreground bg-white/50 dark:bg-slate-950/50 p-3 rounded-lg">
+                          <AlertCircle className="w-4 h-4" />
+                          Generated questions can be edited before final submission.
                         </div>
                       </div>
                     </Card>
+                  ) : (
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+                      <Card className="space-y-6">
+                        <h3 className="text-xl font-semibold border-b pb-4">General Details</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <Label required>Exam Title</Label>
+                            <Input placeholder="e.g. Midterm Computer Science" {...register("title")} error={errors.title?.message} />
+                          </div>
+                          <div>
+                            <Label required>Teacher Name</Label>
+                            <Input placeholder="Prof. Smith" {...register("teacherName")} error={errors.teacherName?.message} />
+                          </div>
+                          <div className="md:col-span-2">
+                            <Label>Description (Optional)</Label>
+                            <textarea
+                              className="w-full bg-background border-2 border-border rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all min-h-[100px]"
+                              placeholder="Instructions for students..."
+                              {...register("description")}
+                            />
+                          </div>
+                          <div>
+                            <Label required>Duration (Minutes)</Label>
+                            <Input type="number" placeholder="60" {...register("duration")} error={errors.duration?.message} />
+                          </div>
+                        </div>
+                      </Card>
 
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-2xl font-bold">Questions</h3>
-                        <Button type="button" variant="secondary" onClick={() => append({ text: "", type: "multiple_choice", options: ["", "", "", ""], correctAnswer: "", marks: 5 })}>
-                          <Plus className="w-4 h-4 mr-2" /> Add Question
-                        </Button>
-                      </div>
-                      {errors.questions?.root && (
-                        <p className="text-destructive font-medium">{errors.questions.root.message}</p>
-                      )}
-                      <AnimatePresence>
-                        {fields.map((field, index) => {
-                          const qType = watch(`questions.${index}.type`);
-                          return (
-                            <motion.div
-                              key={field.id}
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                            >
-                              <Card className="relative pt-10">
-                                <div className="absolute top-0 left-0 bg-primary/10 text-primary px-4 py-1.5 rounded-br-2xl rounded-tl-2xl font-bold text-sm">
-                                  Q{index + 1}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => remove(index)}
-                                  className="absolute top-4 right-4 text-muted-foreground hover:text-destructive transition-colors p-2 bg-secondary rounded-lg"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                                <div className="space-y-6">
-                                  <div>
-                                    <Label required>Question Text</Label>
-                                    <Input placeholder="What is..." {...register(`questions.${index}.text` as const)} error={errors?.questions?.[index]?.text?.message} />
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-2xl font-bold">Questions</h3>
+                          <Button type="button" variant="secondary" onClick={() => append({ text: "", type: "multiple_choice", options: ["", "", "", ""], correctAnswer: "", marks: 5 })}>
+                            <Plus className="w-4 h-4 mr-2" /> Add Question
+                          </Button>
+                        </div>
+                        {errors.questions?.root && (
+                          <p className="text-destructive font-medium">{errors.questions.root.message}</p>
+                        )}
+                        <AnimatePresence>
+                          {fields.map((field, index) => {
+                            const qType = watch(`questions.${index}.type`);
+                            return (
+                              <motion.div
+                                key={field.id}
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                              >
+                                <Card className="relative pt-10">
+                                  <div className="absolute top-0 left-0 bg-primary/10 text-primary px-4 py-1.5 rounded-br-2xl rounded-tl-2xl font-bold text-sm">
+                                    Q{index + 1}
                                   </div>
-                                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                    <div className="col-span-1">
-                                      <Label>Question Type</Label>
-                                      <select
-                                        {...register(`questions.${index}.type` as const)}
-                                        className="w-full bg-background border-2 border-border rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all appearance-none cursor-pointer"
-                                      >
-                                        <option value="multiple_choice">Multiple Choice</option>
-                                        <option value="true_false">True / False</option>
-                                        <option value="short_answer">Short Answer</option>
-                                      </select>
+                                  <button
+                                    type="button"
+                                    onClick={() => remove(index)}
+                                    className="absolute top-4 right-4 text-muted-foreground hover:text-destructive transition-colors p-2 bg-secondary rounded-lg"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                  <div className="space-y-6">
+                                    <div>
+                                      <Label required>Question Text</Label>
+                                      <Input placeholder="What is..." {...register(`questions.${index}.text` as const)} error={errors?.questions?.[index]?.text?.message} />
                                     </div>
-                                    <div className="col-span-1">
-                                      <Label required>Marks</Label>
-                                      <Input 
-                                        type="number" 
-                                        placeholder="5" 
-                                        {...register(`questions.${index}.marks` as const)} 
-                                        error={errors?.questions?.[index]?.marks?.message} 
-                                      />
-                                    </div>
-                                    <div className="col-span-2 space-y-4">
-                                      {qType === "multiple_choice" && (
-                                        <div className="space-y-3">
-                                          <Label>Options</Label>
-                                          {[0, 1, 2, 3].map((optIdx) => (
-                                            <div key={optIdx} className="flex items-center gap-3">
-                                              <span className="font-mono text-sm text-muted-foreground w-6 text-right">{String.fromCharCode(65 + optIdx)}.</span>
-                                              <Input placeholder={`Option ${optIdx + 1}`} {...register(`questions.${index}.options.${optIdx}` as const)} />
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                      <div className="col-span-1">
+                                        <Label>Question Type</Label>
+                                        <select
+                                          {...register(`questions.${index}.type` as const)}
+                                          className="w-full bg-background border-2 border-border rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all appearance-none cursor-pointer"
+                                        >
+                                          <option value="multiple_choice">Multiple Choice</option>
+                                          <option value="true_false">True / False</option>
+                                          <option value="short_answer">Short Answer</option>
+                                        </select>
+                                      </div>
+                                      <div className="col-span-1">
+                                        <Label required>Marks</Label>
+                                        <Input 
+                                          type="number" 
+                                          placeholder="5" 
+                                          {...register(`questions.${index}.marks` as const)} 
+                                          error={errors?.questions?.[index]?.marks?.message} 
+                                        />
+                                      </div>
+                                      <div className="col-span-2 space-y-4">
+                                        {qType === "multiple_choice" && (
+                                          <div className="space-y-3">
+                                            <Label>Options</Label>
+                                            {[0, 1, 2, 3].map((optIdx) => (
+                                              <div key={optIdx} className="flex items-center gap-3">
+                                                <span className="font-mono text-sm text-muted-foreground w-6 text-right">{String.fromCharCode(65 + optIdx)}.</span>
+                                                <Input placeholder={`Option ${optIdx + 1}`} {...register(`questions.${index}.options.${optIdx}` as const)} />
+                                              </div>
+                                            ))}
+                                            <div className="mt-4 pt-4 border-t">
+                                              <Label>Correct Answer</Label>
+                                              <select
+                                                {...register(`questions.${index}.correctAnswer` as const)}
+                                                className="w-full bg-background border-2 border-border rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all appearance-none cursor-pointer"
+                                              >
+                                                <option value="">Select correct option...</option>
+                                                {[0, 1, 2, 3].map((optIdx) => (
+                                                  <option key={optIdx} value={watch(`questions.${index}.options.${optIdx}` as any)}>
+                                                    Option {String.fromCharCode(65 + optIdx)}
+                                                  </option>
+                                                ))}
+                                              </select>
                                             </div>
-                                          ))}
-                                          <div className="mt-4 pt-4 border-t">
-                                            <Label>Correct Answer</Label>
+                                          </div>
+                                        )}
+                                        {qType === "true_false" && (
+                                          <div>
+                                            <Label required>Correct Answer</Label>
                                             <select
                                               {...register(`questions.${index}.correctAnswer` as const)}
                                               className="w-full bg-background border-2 border-border rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all appearance-none cursor-pointer"
                                             >
-                                              <option value="">Select correct option...</option>
-                                              {[0, 1, 2, 3].map((optIdx) => (
-                                                <option key={optIdx} value={watch(`questions.${index}.options.${optIdx}` as any)}>
-                                                  Option {String.fromCharCode(65 + optIdx)}
-                                                </option>
-                                              ))}
+                                              <option value="">Select...</option>
+                                              <option value="True">True</option>
+                                              <option value="False">False</option>
                                             </select>
                                           </div>
-                                        </div>
-                                      )}
-                                      {qType === "true_false" && (
-                                        <div>
-                                          <Label required>Correct Answer</Label>
-                                          <select
-                                            {...register(`questions.${index}.correctAnswer` as const)}
-                                            className="w-full bg-background border-2 border-border rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all appearance-none cursor-pointer"
-                                          >
-                                            <option value="">Select...</option>
-                                            <option value="True">True</option>
-                                            <option value="False">False</option>
-                                          </select>
-                                        </div>
-                                      )}
-                                      {qType === "short_answer" && (
-                                        <div>
-                                          <Label>Reference Answer (Optional)</Label>
-                                          <Input placeholder="Keywords..." {...register(`questions.${index}.correctAnswer` as const)} />
-                                        </div>
-                                      )}
+                                        )}
+                                        {qType === "short_answer" && (
+                                          <div>
+                                            <Label>Reference Answer (Optional)</Label>
+                                            <Input placeholder="Keywords..." {...register(`questions.${index}.correctAnswer` as const)} />
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              </Card>
-                            </motion.div>
-                          );
-                        })}
-                      </AnimatePresence>
-                    </div>
+                                </Card>
+                              </motion.div>
+                            );
+                          })}
+                        </AnimatePresence>
+                      </div>
 
-                    <div className="sticky bottom-0 bg-background/80 backdrop-blur-xl p-4 border-t shadow-[0_-10px_30px_rgba(0,0,0,0.05)] flex justify-end">
-                      <Button type="submit" size="lg" className="w-full md:w-auto px-12" isLoading={createExamMutation.isPending}>
-                        Generate Exam Paper
-                      </Button>
-                    </div>
-                  </form>
+                      <div className="sticky bottom-0 bg-background/80 backdrop-blur-xl p-4 border-t shadow-[0_-10px_30px_rgba(0,0,0,0.05)] flex justify-end">
+                        <Button type="submit" size="lg" className="w-full md:w-auto px-12" isLoading={createExamMutation.isPending}>
+                          Generate Exam Paper
+                        </Button>
+                      </div>
+                    </form>
+                  )}
                 </div>
               </motion.div>
             )}
