@@ -84,7 +84,7 @@ router.post("/:sessionId/submit", async (req, res) => {
     .set({
       status: "submitted",
       submittedAt: new Date(),
-      score: score ?? Math.floor(Math.random() * 40) + 60,
+      score: score ?? 0,
       answers: (answers as Record<number, string>) ?? null,
     })
     .where(eq(examSessionsTable.id, sessionId))

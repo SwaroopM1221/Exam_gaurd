@@ -28,6 +28,7 @@ export const CreateExamBody = zod.object({
       type: zod.enum(["multiple_choice", "short_answer", "true_false"]),
       options: zod.array(zod.string()).optional(),
       correctAnswer: zod.string().optional(),
+      marks: zod.number(),
     }),
   ),
 });
@@ -52,6 +53,7 @@ export const GetExamResponse = zod.object({
       type: zod.enum(["multiple_choice", "short_answer", "true_false"]),
       options: zod.array(zod.string()).optional(),
       correctAnswer: zod.string().optional(),
+      marks: zod.number(),
     }),
   ),
   createdAt: zod.string(),
@@ -82,6 +84,7 @@ export const JoinExamResponse = zod.object({
         type: zod.enum(["multiple_choice", "short_answer", "true_false"]),
         options: zod.array(zod.string()).optional(),
         correctAnswer: zod.string().optional(),
+        marks: zod.number(),
       }),
     ),
     createdAt: zod.string(),

@@ -18,6 +18,7 @@ export type Question = {
   type: "multiple_choice" | "short_answer" | "true_false";
   options?: string[];
   correctAnswer?: string;
+  marks: number;
 };
 
 export const insertExamSchema = createInsertSchema(examsTable).omit({ id: true, createdAt: true });

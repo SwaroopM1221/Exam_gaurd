@@ -377,7 +377,9 @@ components:
             type: string
         correctAnswer:
           type: string
-      required: [text, type]
+        marks:
+          type: integer
+      required: [text, type, marks]
 
     Exam:
       type: object
