@@ -15,6 +15,7 @@ const questionSchema = z.object({
   type: z.enum(["multiple_choice", "short_answer", "true_false"]),
   options: z.array(z.string()).optional(),
   correctAnswer: z.string().optional(),
+  marks: z.coerce.number().min(1, "Marks must be at least 1"),
 });
 
 const examSchema = z.object({
@@ -149,7 +150,7 @@ export default function TeacherPortal() {
     resolver: zodResolver(examSchema),
     defaultValues: {
       teacherName: fullName ?? "",
-      questions: [{ text: "", type: "multiple_choice", options: ["", "", "", ""], correctAnswer: "" }]
+      questions: [{ text: "", type: "multiple_choice", options: ["", "", "", ""], correctAnswer: "", marks: 5 }]
     }
   });
 
@@ -161,10 +162,16 @@ export default function TeacherPortal() {
 
   const onSubmit = (data: ExamFormValues) => {
     const cleanedQuestions = data.questions.map(q => {
-      if (q.type !== "multiple_choice") {
-        return { text: q.text, type: q.type, correctAnswer: q.correctAnswer };
+      const questionData = { 
+        text: q.text, 
+        type: q.type, 
+        correctAnswer: q.correctAnswer, 
+        marks: Number(q.marks) || 0 
+      };
+      if (q.type === "multiple_choice") {
+        return { ...questionData, options: q.options };
       }
-      return q as any;
+      return questionData;
     });
     createExamMutation.mutate({ data: { ...data, questions: cleanedQuestions } }, {
       onSuccess: (res) => {
@@ -286,7 +293,7 @@ export default function TeacherPortal() {
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <h3 className="text-2xl font-bold">Questions</h3>
-                        <Button type="button" variant="secondary" onClick={() => append({ text: "", type: "multiple_choice", options: ["", "", "", ""], correctAnswer: "" })}>
+                        <Button type="button" variant="secondary" onClick={() => append({ text: "", type: "multiple_choice", options: ["", "", "", ""], correctAnswer: "", marks: 5 })}>
                           <Plus className="w-4 h-4 mr-2" /> Add Question
                         </Button>
                       </div>
@@ -319,7 +326,7 @@ export default function TeacherPortal() {
                                     <Label required>Question Text</Label>
                                     <Input placeholder="What is..." {...register(`questions.${index}.text` as const)} error={errors?.questions?.[index]?.text?.message} />
                                   </div>
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                                     <div className="col-span-1">
                                       <Label>Question Type</Label>
                                       <select
@@ -330,6 +337,15 @@ export default function TeacherPortal() {
                                         <option value="true_false">True / False</option>
                                         <option value="short_answer">Short Answer</option>
                                       </select>
+                                    </div>
+                                    <div className="col-span-1">
+                                      <Label required>Marks</Label>
+                                      <Input 
+                                        type="number" 
+                                        placeholder="5" 
+                                        {...register(`questions.${index}.marks` as const)} 
+                                        error={errors?.questions?.[index]?.marks?.message} 
+                                      />
                                     </div>
                                     <div className="col-span-2 space-y-4">
                                       {qType === "multiple_choice" && (
@@ -507,7 +523,9 @@ function TeacherDashboard({ fullName }: { fullName: string }) {
                     </div>
                     <div className="col-span-2 text-center">
                       <span className="font-bold text-primary">{s.score ?? 0}</span>
-                      <span className="text-[10px] text-muted-foreground ml-1">/ 100</span>
+                      <span className="text-[10px] text-muted-foreground ml-1">
+                        / {s.examQuestions?.reduce((acc: number, q: any) => acc + (q.marks || 0), 0) || 100}
+                      </span>
                     </div>
                     <div className="col-span-2">
                       <div className="flex flex-col items-center gap-1">
@@ -542,28 +560,32 @@ function TeacherDashboard({ fullName }: { fullName: string }) {
                       <Card className="mx-4 p-6 bg-muted/30 border-t-0 rounded-t-none rounded-b-2xl border-x-primary/10 border-b-primary/10">
                         <h5 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Student Responses</h5>
                         <div className="space-y-4">
-                          {s.examQuestions?.map((q: any, idx: number) => (
-                            <div key={idx} className="space-y-2">
-                              <div className="text-sm font-semibold flex gap-2">
-                                <span className="text-muted-foreground">{idx + 1}.</span>
-                                <span>{q.text}</span>
-                              </div>
-                              <div className={`text-sm p-3 rounded-xl border ${s.answers[idx] === q.correctAnswer ? 'bg-success/5 border-success/20' : 'bg-destructive/5 border-destructive/20'}`}>
-                                <div className="flex justify-between items-center">
-                                  <div>
-                                    <span className="text-[10px] font-bold uppercase text-muted-foreground block mb-1">Student's Answer:</span>
-                                    <span className={`font-medium ${s.answers[idx] === q.correctAnswer ? 'text-success' : 'text-destructive'}`}>
-                                      {s.answers[idx] || <em className="text-muted-foreground/50">No answer provided</em>}
-                                    </span>
-                                  </div>
-                                  <div className="text-right">
-                                    <span className="text-[10px] font-bold uppercase text-muted-foreground block mb-1">Correct Answer:</span>
-                                    <span className="font-medium text-success">{q.correctAnswer}</span>
+                          {s.examQuestions?.map((q: any, idx: number) => {
+                            const isCorrect = (s.answers[idx] || "").trim().toLowerCase() === (q.correctAnswer || "").trim().toLowerCase();
+                            return (
+                              <div key={idx} className="space-y-2">
+                                <div className="text-sm font-semibold flex gap-2">
+                                  <span className="text-muted-foreground">{idx + 1}.</span>
+                                  <span>{q.text}</span>
+                                  <Badge variant="outline" className="ml-auto text-[10px]">{q.marks} marks</Badge>
+                                </div>
+                                <div className={`text-sm p-3 rounded-xl border ${isCorrect ? 'bg-success/5 border-success/20' : 'bg-destructive/5 border-destructive/20'}`}>
+                                  <div className="flex justify-between items-center">
+                                    <div>
+                                      <span className="text-[10px] font-bold uppercase text-muted-foreground block mb-1">Student's Answer:</span>
+                                      <span className={`font-medium ${isCorrect ? 'text-success' : 'text-destructive'}`}>
+                                        {s.answers[idx] || <em className="text-muted-foreground/50">No answer provided</em>}
+                                      </span>
+                                    </div>
+                                    <div className="text-right">
+                                      <span className="text-[10px] font-bold uppercase text-muted-foreground block mb-1">Correct Answer:</span>
+                                      <span className="font-medium text-success">{q.correctAnswer}</span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </Card>
                     </motion.div>
