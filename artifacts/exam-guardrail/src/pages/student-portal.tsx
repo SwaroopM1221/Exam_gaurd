@@ -34,8 +34,7 @@ export default function StudentPortal() {
         setSession(res);
       },
       onError: (err: any) => {
-        // Simple error handling
-        alert(err?.response?.data?.error || "Failed to join exam. Check code.");
+        alert(err?.data?.error || "Failed to join exam. Check your join code and try again.");
       }
     });
   };

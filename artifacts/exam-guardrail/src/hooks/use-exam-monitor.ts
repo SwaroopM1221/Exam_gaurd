@@ -18,12 +18,12 @@ export function useExamMonitor(sessionId: number | undefined, studentId: number 
       } else {
         if (blurTimeRef.current) {
           const duration = Math.round((Date.now() - blurTimeRef.current) / 1000);
-          logViolation({
+          logViolation({ data: {
             sessionId,
             studentId,
             type: "TAB_SWITCH",
             metadata: { durationAwaySeconds: duration }
-          });
+          }});
           blurTimeRef.current = null;
         }
       }
@@ -36,9 +36,8 @@ export function useExamMonitor(sessionId: number | undefined, studentId: number 
       const windowWidth = window.innerWidth;
       const windowHeight = window.innerHeight;
 
-      // If window is significantly smaller than screen, it's a resize violation
       if (windowWidth < screenWidth * 0.8 || windowHeight < screenHeight * 0.8) {
-        logViolation({
+        logViolation({ data: {
           sessionId,
           studentId,
           type: "WINDOW_RESIZE",
@@ -46,11 +45,10 @@ export function useExamMonitor(sessionId: number | undefined, studentId: number 
             windowSize: `${windowWidth}x${windowHeight}`,
             screenSize: `${screenWidth}x${screenHeight}`
           }
-        });
+        }});
       }
     };
     
-    // Throttle resize event
     let resizeTimer: NodeJS.Timeout;
     const throttledResize = () => {
       clearTimeout(resizeTimer);
@@ -70,12 +68,12 @@ export function useExamMonitor(sessionId: number | undefined, studentId: number 
         if (isCopy) keyAttempted = 'Ctrl+C';
         if (isPaste) keyAttempted = 'Ctrl+V';
 
-        logViolation({
+        logViolation({ data: {
           sessionId,
           studentId,
           type: "KEYBOARD_ATTEMPT",
           metadata: { keyAttempted }
-        });
+        }});
       }
       
       resetIdleTimer();
@@ -85,24 +83,22 @@ export function useExamMonitor(sessionId: number | undefined, studentId: number 
     const resetIdleTimer = () => {
       if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
       idleTimeoutRef.current = setTimeout(() => {
-        logViolation({
+        logViolation({ data: {
           sessionId,
           studentId,
           type: "IDLE_DETECTED",
           metadata: { idleDurationSeconds: IDLE_THRESHOLD / 1000 }
-        });
+        }});
       }, IDLE_THRESHOLD);
     };
 
     const handleMouseMove = () => resetIdleTimer();
 
-    // Attach listeners
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("resize", throttledResize);
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("mousemove", handleMouseMove);
     
-    // Initial idle setup
     resetIdleTimer();
 
     return () => {
