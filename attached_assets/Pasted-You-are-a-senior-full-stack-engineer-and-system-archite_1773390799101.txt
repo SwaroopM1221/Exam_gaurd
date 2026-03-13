@@ -1,0 +1,145 @@
+You are a senior full-stack engineer and system architect.
+
+Build a complete working prototype for an **Exam Guardrail System** that detects suspicious behavior during online exams.
+
+The system must contain two major components:
+
+1. Sentinel Client (Frontend – Student Side)
+2. Auditor Dashboard (Admin / Backend Side)
+
+
+The project must be lightweight and runnable locally.
+
+---
+
+SYSTEM DESCRIPTION
+
+The Sentinel Client is a web-based exam interface that monitors a student's browser behavior and detects potential cheating activity.
+
+It should continuously monitor browser events and send violation logs to the backend.
+
+The Auditor Dashboard allows administrators to view real-time logs of student behavior and calculate a final Trust Score.
+
+---
+
+FEATURE REQUIREMENTS
+
+1. TAB SWITCH DETECTION
+   Use the browser "visibilitychange" and "blur" events.
+
+When a student leaves the tab:
+
+* record the timestamp
+* when they return calculate how many seconds they were away
+* send this data to the backend
+
+Violation Example:
+{
+type: "TAB_SWITCH",
+duration: 12,
+timestamp: "..."
+}
+
+---
+
+2. WINDOW RESIZE DETECTION
+
+If the browser window becomes smaller than 80% of screen width or height, flag a violation.
+
+Log Example:
+{
+type: "WINDOW_RESIZE",
+screenRatio: 0.72,
+timestamp: "..."
+}
+
+---
+
+3. KEYBOARD SHORTCUT BLOCKING
+
+Disable and log attempts to use:
+
+Ctrl + C
+Ctrl + V
+F12
+Print Screen
+
+If any of these keys are pressed:
+preventDefault() and send a violation log.
+
+Log Example:
+{
+type: "KEYBOARD_ATTEMPT",
+key: "Ctrl+C",
+timestamp: "..."
+}
+
+---
+
+4. IDLE DETECTION
+
+If no mouse movement or keyboard input occurs for more than 60 seconds:
+
+trigger idle violation.
+
+Log Example:
+{
+type: "IDLE_DETECTED",
+duration: 60
+}
+
+---
+
+BACKEND REQUIREMENTS
+
+Build an Express API with endpoints:
+
+POST /logViolation
+Stores violation events.
+
+GET /studentLogs/:studentId
+Returns timeline of violations.
+
+GET /trustScore/:studentId
+Calculates final trust score.
+
+---
+
+TRUST SCORE CALCULATION
+
+Start at 100 points.
+
+Penalties:
+Tab switch → -10
+Window resize → -5
+Keyboard attempt → -15
+Idle >60s → -5
+
+Minimum score = 0
+
+---
+
+AUDITOR DASHBOARD
+
+Admin page should show:
+
+Student ID
+Timeline of violations
+Type of violation
+Timestamp
+Calculated Trust Score
+
+Display violations in a table.
+
+DELIVERABLES
+
+1. Complete code for frontend and backend.
+2. Event detection logic.
+3. API implementation.
+4. Trust score calculation logic.
+5. Admin dashboard UI.
+6. Instructions to run locally.
+
+Also include comments explaining how each cheating detection feature works.
+
+Focus on simplicity, reliability, and clear code.

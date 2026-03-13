@@ -1,22 +1,28 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Exam Guardrail System API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: exams
+    description: Exam management
+  - name: students
+    description: Student operations
+  - name: violations
+    description: Violation logging
+  - name: auditor
+    description: Auditor dashboard
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +30,190 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /exams:
+    post:
+      operationId: createExam
+      tags: [exams]
+      summary: Create a new exam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateExamRequest"
+      responses:
+        "201":
+          description: Exam created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Exam"
+
+  /exams/{examId}:
+    get:
+      operationId: getExam
+      tags: [exams]
+      summary: Get exam details
+      parameters:
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Exam details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Exam"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /exams/join:
+    post:
+      operationId: joinExam
+      tags: [students]
+      summary: Student joins exam using USN and join code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinExamRequest"
+      responses:
+        "200":
+          description: Joined successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JoinExamResponse"
+        "404":
+          description: Invalid join code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /violations:
+    post:
+      operationId: logViolation
+      tags: [violations]
+      summary: Log a violation event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogViolationRequest"
+      responses:
+        "201":
+          description: Violation logged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Violation"
+
+  /students/{studentId}/logs:
+    get:
+      operationId: getStudentLogs
+      tags: [violations]
+      summary: Get violation timeline for a student
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Student violation logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentLogsResponse"
+
+  /students/{studentId}/trust-score:
+    get:
+      operationId: getTrustScore
+      tags: [violations]
+      summary: Get trust score for a student
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Trust score
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrustScoreResponse"
+
+  /auditor/signin:
+    post:
+      operationId: auditorSignIn
+      tags: [auditor]
+      summary: Auditor sign in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuditorSignInRequest"
+      responses:
+        "200":
+          description: Sign in successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditorSignInResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auditor/sessions:
+    get:
+      operationId: getAuditorSessions
+      tags: [auditor]
+      summary: Get all exam sessions for auditor dashboard
+      parameters:
+        - name: examId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditorSessionsResponse"
+
+  /auditor/exams:
+    get:
+      operationId: getAuditorExams
+      tags: [auditor]
+      summary: Get all exams for auditor
+      responses:
+        "200":
+          description: List of exams
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditorExamsResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +221,245 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    CreateExamRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        teacherName:
+          type: string
+        duration:
+          type: integer
+          description: Duration in minutes
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Question"
+      required: [title, teacherName, duration, questions]
+
+    Question:
+      type: object
+      properties:
+        text:
+          type: string
+        type:
+          type: string
+          enum: [multiple_choice, short_answer, true_false]
+        options:
+          type: array
+          items:
+            type: string
+        correctAnswer:
+          type: string
+      required: [text, type]
+
+    Exam:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        teacherName:
+          type: string
+        joinCode:
+          type: string
+        duration:
+          type: integer
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Question"
+        createdAt:
+          type: string
+      required: [id, title, teacherName, joinCode, duration, questions, createdAt]
+
+    JoinExamRequest:
+      type: object
+      properties:
+        usn:
+          type: string
+        studentName:
+          type: string
+        joinCode:
+          type: string
+      required: [usn, studentName, joinCode]
+
+    JoinExamResponse:
+      type: object
+      properties:
+        sessionId:
+          type: integer
+        studentId:
+          type: integer
+        exam:
+          $ref: "#/components/schemas/Exam"
+      required: [sessionId, studentId, exam]
+
+    LogViolationRequest:
+      type: object
+      properties:
+        sessionId:
+          type: integer
+        studentId:
+          type: integer
+        type:
+          type: string
+          enum: [TAB_SWITCH, WINDOW_RESIZE, KEYBOARD_ATTEMPT, IDLE_DETECTED]
+        metadata:
+          type: object
+          additionalProperties: true
+      required: [sessionId, studentId, type]
+
+    Violation:
+      type: object
+      properties:
+        id:
+          type: integer
+        sessionId:
+          type: integer
+        studentId:
+          type: integer
+        type:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+      required: [id, sessionId, studentId, type, timestamp]
+
+    StudentLogsResponse:
+      type: object
+      properties:
+        studentId:
+          type: integer
+        usn:
+          type: string
+        studentName:
+          type: string
+        violations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Violation"
+      required: [studentId, usn, studentName, violations]
+
+    TrustScoreResponse:
+      type: object
+      properties:
+        studentId:
+          type: integer
+        usn:
+          type: string
+        studentName:
+          type: string
+        trustScore:
+          type: integer
+        breakdown:
+          type: object
+          properties:
+            tabSwitches:
+              type: integer
+            windowResizes:
+              type: integer
+            keyboardAttempts:
+              type: integer
+            idleDetections:
+              type: integer
+          required: [tabSwitches, windowResizes, keyboardAttempts, idleDetections]
+      required: [studentId, usn, studentName, trustScore, breakdown]
+
+    AuditorSignInRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required: [username, password]
+
+    AuditorSignInResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        username:
+          type: string
+      required: [token, username]
+
+    AuditorSession:
+      type: object
+      properties:
+        sessionId:
+          type: integer
+        studentId:
+          type: integer
+        usn:
+          type: string
+        studentName:
+          type: string
+        examId:
+          type: integer
+        examTitle:
+          type: string
+        joinCode:
+          type: string
+        trustScore:
+          type: integer
+        violationCount:
+          type: integer
+        joinedAt:
+          type: string
+        status:
+          type: string
+      required: [sessionId, studentId, usn, studentName, examId, examTitle, joinCode, trustScore, violationCount, joinedAt, status]
+
+    AuditorSessionsResponse:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditorSession"
+      required: [sessions]
+
+    AuditorExam:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        teacherName:
+          type: string
+        joinCode:
+          type: string
+        duration:
+          type: integer
+        studentCount:
+          type: integer
+        createdAt:
+          type: string
+      required: [id, title, teacherName, joinCode, duration, studentCount, createdAt]
+
+    AuditorExamsResponse:
+      type: object
+      properties:
+        exams:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditorExam"
+      required: [exams]

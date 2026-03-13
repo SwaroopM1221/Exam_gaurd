@@ -1,0 +1,20 @@
+packages:
+  "framer-motion": "For smooth page transitions and micro-interactions"
+  "react-hook-form": "For robust form state management"
+  "@hookform/resolvers": "Zod integration for forms"
+  "zod": "Schema validation for client-side forms"
+  "date-fns": "For formatting timestamps in auditor dashboard"
+  "recharts": "For visualizing trust score trends and violation breakdown"
+
+images:
+  - path: "artifacts/exam-guardrail/public/images/hero-bg.png"
+    description: "Abstract, very subtle, clean geometric shapes in light blue, indigo, and soft white, representing a secure academic environment. High key, modern, lots of negative space. Professional."
+    aspect_ratio: "16:9"
+  - path: "artifacts/exam-guardrail/public/images/shield-icon.png"
+    description: "A 3D glassmorphism minimalist shield icon in glowing blue and white. Symbolizing security and trust."
+    aspect_ratio: "1:1"
+
+notes:
+  - Auditor authentication token will be stored in localStorage
+  - Generated API hooks from @workspace/api-client-react are used for all remote data fetching
+  - Exam monitoring uses browser EventListeners in a custom hook
