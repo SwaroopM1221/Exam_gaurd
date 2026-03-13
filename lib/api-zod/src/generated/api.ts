@@ -102,6 +102,7 @@ export const LogViolationBody = zod.object({
     "WINDOW_RESIZE",
     "KEYBOARD_ATTEMPT",
     "IDLE_DETECTED",
+    "VOICE_DETECTED",
   ]),
   metadata: zod.record(zod.string(), zod.unknown()).optional(),
 });

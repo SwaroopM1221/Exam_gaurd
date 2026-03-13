@@ -435,7 +435,7 @@ components:
           type: integer
         type:
           type: string
-          enum: [TAB_SWITCH, WINDOW_RESIZE, KEYBOARD_ATTEMPT, IDLE_DETECTED]
+          enum: [TAB_SWITCH, WINDOW_RESIZE, KEYBOARD_ATTEMPT, IDLE_DETECTED, VOICE_DETECTED]
         metadata:
           type: object
 
