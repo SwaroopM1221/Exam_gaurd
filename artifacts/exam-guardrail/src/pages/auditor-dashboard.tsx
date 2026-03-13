@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { useAuditorSignIn, useAuditorSignUp, useGetAuditorExams, useGetAuditorSessions, useGetStudentLogs, customFetch } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Search, ShieldAlert, MonitorOff, Keyboard, MousePointerClick, ChevronRight, X, User, LogIn, UserPlus, LogOut, CheckCircle2, Download, FileText, FileDown } from "lucide-react";
+import { Search, ShieldAlert, MonitorOff, Keyboard, MousePointerClick, ChevronRight, X, User, LogIn, UserPlus, LogOut, CheckCircle2, Download, FileText, FileDown, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function AuditorDashboard() {

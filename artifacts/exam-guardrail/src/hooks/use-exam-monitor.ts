@@ -133,6 +133,57 @@ export function useExamMonitor(sessionId: number | undefined, studentId: number 
     
     resetIdleTimer();
 
+    // 5. Voice/Audio Detection
+    let audioContext: AudioContext | null = null;
+    let microphone: MediaStreamAudioSourceNode | null = null;
+    let analyzer: AnalyserNode | null = null;
+    let stream: MediaStream | null = null;
+    let voiceLogThrottle = false;
+
+    const setupVoiceDetection = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new AudioContext();
+        microphone = audioContext.createMediaStreamSource(stream);
+        analyzer = audioContext.createAnalyser();
+        analyzer.fftSize = 256;
+        microphone.connect(analyzer);
+
+        const bufferLength = analyzer.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        const checkAudio = () => {
+          if (!analyzer) return;
+          analyzer.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < bufferLength; i++) {
+            sum += dataArray[i];
+          }
+          const average = sum / bufferLength;
+
+          // Threshold for "violence" (voice detection)
+          // Average > 40-50 is usually indicative of clear speech/noise
+          if (average > 45 && !voiceLogThrottle) {
+            voiceLogThrottle = true;
+            logViolation({ data: {
+              sessionId,
+              studentId,
+              type: "VOICE_DETECTED",
+              metadata: { volume: Math.round(average) }
+            }});
+            // Throttle voice logs to avoid spamming the server (max once every 5 seconds)
+            setTimeout(() => { voiceLogThrottle = false; }, 5000);
+          }
+          requestAnimationFrame(checkAudio);
+        };
+        checkAudio();
+      } catch (err) {
+        console.warn("Microphone access denied or not available", err);
+      }
+    };
+
+    setupVoiceDetection();
+
     return () => {
       window.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("blur", handleWindowBlur);
@@ -141,6 +192,10 @@ export function useExamMonitor(sessionId: number | undefined, studentId: number 
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("mousemove", handleMouseMove);
       if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
+      
+      // Cleanup Audio
+      if (audioContext) audioContext.close();
+      if (stream) stream.getTracks().forEach(track => track.stop());
     };
   }, [sessionId, studentId, logViolation]);
 

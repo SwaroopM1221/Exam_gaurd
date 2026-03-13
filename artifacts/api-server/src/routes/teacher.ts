@@ -100,12 +100,14 @@ router.get("/exams/:examId/sessions", async (req, res) => {
       const windowResizes = violations.filter(v => v.type === "WINDOW_RESIZE").length;
       const keyboardAttempts = violations.filter(v => v.type === "KEYBOARD_ATTEMPT").length;
       const idleDetections = violations.filter(v => v.type === "IDLE_DETECTED").length;
+      const voiceDetections = violations.filter(v => v.type === "VOICE_DETECTED").length;
 
       let trustScore = 100;
       trustScore -= tabSwitches * 10;
       trustScore -= windowResizes * 5;
       trustScore -= keyboardAttempts * 15;
       trustScore -= idleDetections * 5;
+      trustScore -= voiceDetections * 20;
       trustScore = Math.max(0, trustScore);
 
       return {

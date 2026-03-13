@@ -23,6 +23,8 @@ export default function StudentPortal() {
   const [examFinished, setExamFinished] = useState(false);
   const [finalScore, setFinalScore] = useState<number | null>(null);
   const [totalPossibleScore, setTotalPossibleScore] = useState<number | null>(null);
+  const [micPermission, setMicPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
+  const [isRequestingMic, setIsRequestingMic] = useState(false);
 
   const joinMutation = useJoinExam();
 
@@ -30,7 +32,25 @@ export default function StudentPortal() {
     resolver: zodResolver(joinSchema)
   });
 
+  const requestMicAccess = async () => {
+    setIsRequestingMic(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop()); // Stop immediately after testing
+      setMicPermission('granted');
+    } catch (err) {
+      setMicPermission('denied');
+      alert("Microphone access is required to join this exam for integrity monitoring.");
+    } finally {
+      setIsRequestingMic(false);
+    }
+  };
+
   const onJoin = (data: JoinFormValues) => {
+    if (micPermission !== 'granted') {
+      alert("Please grant microphone access first.");
+      return;
+    }
     joinMutation.mutate({ data }, {
       onSuccess: (res) => {
         setSession(res);
@@ -105,6 +125,34 @@ export default function StudentPortal() {
                 <Input placeholder="John Doe" {...register("studentName")} error={errors.studentName?.message} />
               </div>
 
+              <div className="pt-4 border-t border-border space-y-4">
+                <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-xl border border-border">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full ${micPermission === 'granted' ? 'bg-success shadow-[0_0_10px_rgba(34,197,94,0.5)]' : micPermission === 'denied' ? 'bg-destructive' : 'bg-warning animate-pulse'}`} />
+                    <span className="text-sm font-medium">Microphone Status</span>
+                  </div>
+                  {micPermission !== 'granted' ? (
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={requestMicAccess}
+                      isLoading={isRequestingMic}
+                    >
+                      Grant Access
+                    </Button>
+                  ) : (
+                    <Badge variant="success" className="bg-success/10 text-success border-success/20">Active</Badge>
+                  )}
+                </div>
+                
+                {micPermission === 'denied' && (
+                  <p className="text-xs text-destructive font-medium px-1">
+                    Permission denied. Please enable microphone in browser settings to continue.
+                  </p>
+                )}
+              </div>
+
               <div className="bg-warning/10 border border-warning/20 rounded-xl p-4 flex items-start gap-3 mt-6">
                 <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
                 <p className="text-xs text-warning-foreground font-medium">
@@ -112,7 +160,13 @@ export default function StudentPortal() {
                 </p>
               </div>
 
-              <Button type="submit" className="w-full" size="lg" isLoading={joinMutation.isPending}>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                size="lg" 
+                isLoading={joinMutation.isPending}
+                disabled={micPermission !== 'granted'}
+              >
                 Join Exam Now
               </Button>
             </form>
