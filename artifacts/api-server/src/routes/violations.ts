@@ -6,7 +6,7 @@ import { LogViolationBody } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-router.post("/", async (req, res) => {
+router.post("/violations", async (req, res) => {
   const parsed = LogViolationBody.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid request body" });
