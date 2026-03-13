@@ -1,6 +1,6 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod/v4";
+import { z } from "zod";
 import { examsTable } from "./exams";
 
 export const studentsTable = pgTable("students", {
@@ -17,6 +17,8 @@ export const examSessionsTable = pgTable("exam_sessions", {
   status: text("status").notNull().default("active"),
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
   submittedAt: timestamp("submitted_at"),
+  score: integer("score"),
+  answers: jsonb("answers").$type<Record<number, string>>(),
 });
 
 export const insertStudentSchema = createInsertSchema(studentsTable).omit({ id: true, createdAt: true });

@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { teachersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { teachersTable, examsTable, examSessionsTable, studentsTable, violationsTable } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
 import { TeacherSignUpBody, TeacherSignInBody } from "@workspace/api-zod";
 import { hashPassword, verifyPassword } from "../lib/hash.js";
 import crypto from "crypto";
@@ -36,6 +36,90 @@ router.post("/signin", async (req, res) => {
   }
   const token = crypto.randomBytes(32).toString("hex");
   return res.json({ token, username: teacher.username, fullName: teacher.fullName });
+});
+
+router.get("/exams", async (req, res) => {
+  const teacherName = req.query.teacherName as string;
+  if (!teacherName) return res.status(400).json({ error: "teacherName is required" });
+
+  const exams = await db.select().from(examsTable).where(eq(examsTable.teacherName, teacherName));
+
+  const enriched = await Promise.all(
+    exams.map(async (exam) => {
+      const [result] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(examSessionsTable)
+        .where(eq(examSessionsTable.examId, exam.id));
+
+      return {
+        id: exam.id,
+        title: exam.title,
+        teacherName: exam.teacherName,
+        joinCode: exam.joinCode,
+        duration: exam.duration,
+        studentCount: result?.count ?? 0,
+        createdAt: exam.createdAt.toISOString(),
+      };
+    })
+  );
+
+  return res.json({ exams: enriched });
+});
+
+router.get("/exams/:examId/sessions", async (req, res) => {
+  const examId = parseInt(req.params.examId);
+  if (isNaN(examId)) return res.status(400).json({ error: "Invalid exam ID" });
+
+  const sessions = await db
+    .select({
+      sessionId: examSessionsTable.id,
+      studentId: studentsTable.id,
+      usn: studentsTable.usn,
+      studentName: studentsTable.studentName,
+      examId: examsTable.id,
+      examTitle: examsTable.title,
+      examQuestions: examsTable.questions,
+      status: examSessionsTable.status,
+      joinedAt: examSessionsTable.joinedAt,
+      score: examSessionsTable.score,
+      answers: examSessionsTable.answers,
+    })
+    .from(examSessionsTable)
+    .innerJoin(studentsTable, eq(examSessionsTable.studentId, studentsTable.id))
+    .innerJoin(examsTable, eq(examSessionsTable.examId, examsTable.id))
+    .where(eq(examSessionsTable.examId, examId));
+
+  const enriched = await Promise.all(
+    sessions.map(async (s) => {
+      const violations = await db
+        .select()
+        .from(violationsTable)
+        .where(eq(violationsTable.studentId, s.studentId));
+
+      const tabSwitches = violations.filter(v => v.type === "TAB_SWITCH").length;
+      const windowResizes = violations.filter(v => v.type === "WINDOW_RESIZE").length;
+      const keyboardAttempts = violations.filter(v => v.type === "KEYBOARD_ATTEMPT").length;
+      const idleDetections = violations.filter(v => v.type === "IDLE_DETECTED").length;
+
+      let trustScore = 100;
+      trustScore -= tabSwitches * 10;
+      trustScore -= windowResizes * 5;
+      trustScore -= keyboardAttempts * 15;
+      trustScore -= idleDetections * 5;
+      trustScore = Math.max(0, trustScore);
+
+      return {
+        ...s,
+        joinedAt: s.joinedAt.toISOString(),
+        trustScore,
+        score: s.score ?? 0,
+        answers: s.answers ?? {},
+        examQuestions: s.examQuestions,
+      };
+    })
+  );
+
+  return res.json({ sessions: enriched });
 });
 
 export default router;

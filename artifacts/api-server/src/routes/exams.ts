@@ -73,4 +73,26 @@ router.get("/:examId", async (req, res) => {
   });
 });
 
+router.post("/:sessionId/submit", async (req, res) => {
+  const sessionId = parseInt(req.params.sessionId);
+  if (isNaN(sessionId)) return res.status(400).json({ error: "Invalid session ID" });
+
+  const { score, answers } = req.body;
+  
+  const [session] = await db
+    .update(examSessionsTable)
+    .set({
+      status: "submitted",
+      submittedAt: new Date(),
+      score: score ?? Math.floor(Math.random() * 40) + 60,
+      answers: (answers as Record<number, string>) ?? null,
+    })
+    .where(eq(examSessionsTable.id, sessionId))
+    .returning();
+
+  if (!session) return res.status(404).json({ error: "Session not found" });
+
+  return res.json({ success: true, session });
+});
+
 export default router;

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout";
 import { Card, Button, Input, Label, Badge } from "@/components/ui";
-import { useJoinExam, useGetTrustScore } from "@workspace/api-client-react";
+import { useJoinExam, useGetTrustScore, customFetch } from "@workspace/api-client-react";
 import { useExamMonitor } from "@/hooks/use-exam-monitor";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -116,6 +116,7 @@ export default function StudentPortal() {
 
 function ActiveExamView({ session, onFinish }: { session: any, onFinish: () => void }) {
   const { exam, sessionId, studentId } = session;
+  const [answers, setAnswers] = useState<Record<number, string>>({});
   
   // Activate monitoring hooks
   useExamMonitor(sessionId, studentId);
@@ -126,15 +127,40 @@ function ActiveExamView({ session, onFinish }: { session: any, onFinish: () => v
   });
 
   const [timeLeft, setTimeLeft] = useState(exam.duration * 60);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await customFetch(`/api/exams/${sessionId}/submit`, {
+        method: "POST",
+        body: JSON.stringify({ 
+          score: Math.floor(Math.random() * 30) + 70, // Simple random score for demo
+          answers 
+        })
+      });
+      onFinish();
+    } catch (err) {
+      console.error("Failed to submit exam", err);
+      onFinish(); // Still finish even if API fails for now
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleAnswerChange = (questionIdx: number, answer: string) => {
+    setAnswers(prev => ({ ...prev, [questionIdx]: answer }));
+  };
 
   useEffect(() => {
     if (timeLeft <= 0) {
-      onFinish();
+      handleSubmit();
       return;
     }
     const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
     return () => clearInterval(timer);
-  }, [timeLeft, onFinish]);
+  }, [timeLeft]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -171,7 +197,7 @@ function ActiveExamView({ session, onFinish }: { session: any, onFinish: () => v
               {formatTime(timeLeft)}
             </div>
             
-            <Button onClick={onFinish} variant="primary">Submit Exam</Button>
+            <Button onClick={handleSubmit} variant="primary" isLoading={isSubmitting}>Submit Exam</Button>
           </div>
         </div>
       </header>
@@ -192,10 +218,44 @@ function ActiveExamView({ session, onFinish }: { session: any, onFinish: () => v
                 <div className="space-y-3">
                   {q.options.map((opt: string, optIdx: number) => (
                     <label key={optIdx} className="flex items-center gap-3 p-4 rounded-xl border-2 border-border hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-all has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                      <input type="radio" name={`q_${i}`} className="w-4 h-4 text-primary focus:ring-primary" />
+                      <input 
+                        type="radio" 
+                        name={`q_${i}`} 
+                        className="w-4 h-4 text-primary focus:ring-primary" 
+                        onChange={() => handleAnswerChange(i, opt)}
+                        checked={answers[i] === opt}
+                      />
                       <span className="font-medium text-foreground">{opt}</span>
                     </label>
                   ))}
+                </div>
+              )}
+
+              {(q.type === 'short_answer' || q.type === 'true_false') && (
+                <div className="space-y-3">
+                  {q.type === 'true_false' ? (
+                    <div className="flex gap-4">
+                      {['True', 'False'].map(opt => (
+                        <label key={opt} className="flex-1 flex items-center gap-3 p-4 rounded-xl border-2 border-border hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-all has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                          <input 
+                            type="radio" 
+                            name={`q_${i}`} 
+                            className="w-4 h-4 text-primary focus:ring-primary" 
+                            onChange={() => handleAnswerChange(i, opt)}
+                            checked={answers[i] === opt}
+                          />
+                          <span className="font-medium text-foreground">{opt}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <textarea 
+                      className="w-full min-h-[100px] rounded-xl border-2 border-border p-4 focus:border-primary focus:ring-0 transition-all bg-transparent"
+                      placeholder="Type your answer here..."
+                      onChange={(e) => handleAnswerChange(i, e.target.value)}
+                      value={answers[i] || ''}
+                    />
+                  )}
                 </div>
               )}
 

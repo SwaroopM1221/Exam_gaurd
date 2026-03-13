@@ -201,13 +201,51 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TeacherAuthResponse"
+                $ref: "#/components/schemas/TeacherSignInResponse"
         "401":
           description: Invalid credentials
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
+  /teacher/exams:
+    get:
+      operationId: getTeacherExams
+      tags: [teacher]
+      summary: Get all exams for a specific teacher
+      parameters:
+        - name: teacherName
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of exams
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditorExamsResponse"
+
+  /teacher/exams/{examId}/sessions:
+    get:
+      operationId: getTeacherExamSessions
+      tags: [teacher]
+      summary: Get all student sessions for a specific exam
+      parameters:
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeacherExamSessionsResponse"
 
   /auditor/signup:
     post:
@@ -398,6 +436,40 @@ components:
           enum: [TAB_SWITCH, WINDOW_RESIZE, KEYBOARD_ATTEMPT, IDLE_DETECTED]
         metadata:
           type: object
+
+    TeacherExamSessionsResponse:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeacherExamSession"
+      required: [sessions]
+
+    TeacherExamSession:
+      type: object
+      properties:
+        sessionId:
+          type: integer
+        studentId:
+          type: integer
+        usn:
+          type: string
+        studentName:
+          type: string
+        examId:
+          type: integer
+        examTitle:
+          type: string
+        trustScore:
+          type: integer
+        score:
+          type: integer
+        joinedAt:
+          type: string
+        status:
+          type: string
+      required: [sessionId, studentId, usn, studentName, examId, examTitle, trustScore, joinedAt, status]
           additionalProperties: true
       required: [sessionId, studentId, type]
 
