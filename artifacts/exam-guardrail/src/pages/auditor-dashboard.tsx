@@ -33,7 +33,7 @@ export default function AuditorDashboard() {
     if (!fullName.trim()) { setError("Full name is required"); return; }
     signUpMutation.mutate({ data: { username: usernameInput, password, fullName } }, {
       onSuccess: (res) => login(res.token, res.username),
-      onError: (err: any) => setError(err?.response?.data?.error ?? "Registration failed"),
+      onError: (err: any) => setError(err?.data?.error ?? "Registration failed"),
     });
   };
 

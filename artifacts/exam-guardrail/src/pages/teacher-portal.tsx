@@ -26,13 +26,12 @@ const examSchema = z.object({
 
 type ExamFormValues = z.infer<typeof examSchema>;
 
-function TeacherAuthGate({ onAuthenticated }: { onAuthenticated: () => void }) {
+function TeacherAuthGate({ login }: { login: (token: string, username: string, fullName?: string) => void }) {
   const [tab, setTab] = useState<"signin" | "signup">("signin");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [error, setError] = useState("");
-  const { login } = useAuth("teacher");
 
   const signInMutation = useTeacherSignIn();
   const signUpMutation = useTeacherSignUp();
@@ -43,7 +42,6 @@ function TeacherAuthGate({ onAuthenticated }: { onAuthenticated: () => void }) {
     signInMutation.mutate({ data: { username, password } }, {
       onSuccess: (res) => {
         login(res.token, res.username, res.fullName);
-        onAuthenticated();
       },
       onError: () => setError("Invalid username or password"),
     });
@@ -56,10 +54,9 @@ function TeacherAuthGate({ onAuthenticated }: { onAuthenticated: () => void }) {
     signUpMutation.mutate({ data: { username, password, fullName } }, {
       onSuccess: (res) => {
         login(res.token, res.username, res.fullName);
-        onAuthenticated();
       },
       onError: (err: any) => {
-        const msg = err?.response?.data?.error ?? "Registration failed";
+        const msg = err?.data?.error ?? "Registration failed";
         setError(msg);
       },
     });
@@ -140,7 +137,7 @@ function TeacherAuthGate({ onAuthenticated }: { onAuthenticated: () => void }) {
 }
 
 export default function TeacherPortal() {
-  const { isAuthenticated, fullName, logout } = useAuth("teacher");
+  const { isAuthenticated, fullName, logout, login } = useAuth("teacher");
   const [createdExamCode, setCreatedExamCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -157,7 +154,7 @@ export default function TeacherPortal() {
   const { fields, append, remove } = useFieldArray({ control, name: "questions" });
 
   if (!isAuthenticated) {
-    return <TeacherAuthGate onAuthenticated={() => {}} />;
+    return <TeacherAuthGate login={login} />;
   }
 
   const onSubmit = (data: ExamFormValues) => {
