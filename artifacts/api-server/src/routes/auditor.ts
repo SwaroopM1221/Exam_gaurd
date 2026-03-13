@@ -1,28 +1,41 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { examsTable, studentsTable, examSessionsTable, violationsTable } from "@workspace/db";
+import { examsTable, studentsTable, examSessionsTable, violationsTable, auditorsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
-import { AuditorSignInBody } from "@workspace/api-zod";
+import { AuditorSignInBody, AuditorSignUpBody } from "@workspace/api-zod";
+import { hashPassword, verifyPassword } from "../lib/hash.js";
 import crypto from "crypto";
 
 const router: IRouter = Router();
 
-const AUDITOR_USERNAME = "admin";
-const AUDITOR_PASSWORD = "admin123";
-const tokens = new Set<string>();
+router.post("/signup", async (req, res) => {
+  const parsed = AuditorSignUpBody.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid request body" });
+  }
+  const { username, password, fullName } = parsed.data;
+  const [existing] = await db.select().from(auditorsTable).where(eq(auditorsTable.username, username));
+  if (existing) {
+    return res.status(409).json({ error: "Username already taken" });
+  }
+  const passwordHash = hashPassword(password);
+  await db.insert(auditorsTable).values({ username, passwordHash, fullName });
+  const token = crypto.randomBytes(32).toString("hex");
+  return res.status(201).json({ token, username });
+});
 
-router.post("/signin", (req, res) => {
+router.post("/signin", async (req, res) => {
   const parsed = AuditorSignInBody.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid request body" });
   }
   const { username, password } = parsed.data;
-  if (username !== AUDITOR_USERNAME || password !== AUDITOR_PASSWORD) {
-    return res.status(401).json({ error: "Invalid credentials" });
+  const [auditor] = await db.select().from(auditorsTable).where(eq(auditorsTable.username, username));
+  if (!auditor || !verifyPassword(password, auditor.passwordHash)) {
+    return res.status(401).json({ error: "Invalid username or password" });
   }
   const token = crypto.randomBytes(32).toString("hex");
-  tokens.add(token);
-  return res.json({ token, username });
+  return res.json({ token, username: auditor.username });
 });
 
 router.get("/sessions", async (req, res) => {

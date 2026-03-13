@@ -112,6 +112,29 @@ export interface TrustScoreResponse {
   breakdown: TrustScoreResponseBreakdown;
 }
 
+export interface TeacherSignUpRequest {
+  username: string;
+  password: string;
+  fullName: string;
+}
+
+export interface TeacherSignInRequest {
+  username: string;
+  password: string;
+}
+
+export interface TeacherAuthResponse {
+  token: string;
+  username: string;
+  fullName: string;
+}
+
+export interface AuditorSignUpRequest {
+  username: string;
+  password: string;
+  fullName: string;
+}
+
 export interface AuditorSignInRequest {
   username: string;
   password: string;

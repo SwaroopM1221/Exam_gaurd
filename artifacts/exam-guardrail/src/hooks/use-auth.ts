@@ -1,20 +1,45 @@
 import { useState, useEffect } from 'react';
 
-export function useAuth() {
-  const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem('auditor_token');
-  });
+type AuthRole = 'teacher' | 'auditor';
+
+interface AuthState {
+  token: string;
+  username: string;
+  fullName?: string;
+  role: AuthRole;
+}
+
+function getStoredAuth(role: AuthRole): AuthState | null {
+  try {
+    const raw = localStorage.getItem(`auth_${role}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function useAuth(role: AuthRole) {
+  const [auth, setAuth] = useState<AuthState | null>(() => getStoredAuth(role));
 
   useEffect(() => {
-    if (token) {
-      localStorage.setItem('auditor_token', token);
+    if (auth) {
+      localStorage.setItem(`auth_${role}`, JSON.stringify(auth));
     } else {
-      localStorage.removeItem('auditor_token');
+      localStorage.removeItem(`auth_${role}`);
     }
-  }, [token]);
+  }, [auth, role]);
 
-  const login = (newToken: string) => setToken(newToken);
-  const logout = () => setToken(null);
+  const login = (token: string, username: string, fullName?: string) =>
+    setAuth({ token, username, fullName, role });
 
-  return { token, login, logout, isAuthenticated: !!token };
+  const logout = () => setAuth(null);
+
+  return {
+    token: auth?.token ?? null,
+    username: auth?.username ?? null,
+    fullName: auth?.fullName ?? null,
+    isAuthenticated: !!auth,
+    login,
+    logout,
+  };
 }

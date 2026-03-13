@@ -21,6 +21,7 @@ import type {
   AuditorSessionsResponse,
   AuditorSignInRequest,
   AuditorSignInResponse,
+  AuditorSignUpRequest,
   CreateExamRequest,
   ErrorResponse,
   Exam,
@@ -30,6 +31,9 @@ import type {
   JoinExamResponse,
   LogViolationRequest,
   StudentLogsResponse,
+  TeacherAuthResponse,
+  TeacherSignInRequest,
+  TeacherSignUpRequest,
   TrustScoreResponse,
   Violation,
 } from "./api.schemas";
@@ -628,6 +632,264 @@ export function useGetTrustScore<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Teacher registration
+ */
+export const getTeacherSignUpUrl = () => {
+  return `/api/teacher/signup`;
+};
+
+export const teacherSignUp = async (
+  teacherSignUpRequest: TeacherSignUpRequest,
+  options?: RequestInit,
+): Promise<TeacherAuthResponse> => {
+  return customFetch<TeacherAuthResponse>(getTeacherSignUpUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(teacherSignUpRequest),
+  });
+};
+
+export const getTeacherSignUpMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof teacherSignUp>>,
+    TError,
+    { data: BodyType<TeacherSignUpRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof teacherSignUp>>,
+  TError,
+  { data: BodyType<TeacherSignUpRequest> },
+  TContext
+> => {
+  const mutationKey = ["teacherSignUp"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof teacherSignUp>>,
+    { data: BodyType<TeacherSignUpRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return teacherSignUp(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TeacherSignUpMutationResult = NonNullable<
+  Awaited<ReturnType<typeof teacherSignUp>>
+>;
+export type TeacherSignUpMutationBody = BodyType<TeacherSignUpRequest>;
+export type TeacherSignUpMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Teacher registration
+ */
+export const useTeacherSignUp = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof teacherSignUp>>,
+    TError,
+    { data: BodyType<TeacherSignUpRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof teacherSignUp>>,
+  TError,
+  { data: BodyType<TeacherSignUpRequest> },
+  TContext
+> => {
+  return useMutation(getTeacherSignUpMutationOptions(options));
+};
+
+/**
+ * @summary Teacher sign in
+ */
+export const getTeacherSignInUrl = () => {
+  return `/api/teacher/signin`;
+};
+
+export const teacherSignIn = async (
+  teacherSignInRequest: TeacherSignInRequest,
+  options?: RequestInit,
+): Promise<TeacherAuthResponse> => {
+  return customFetch<TeacherAuthResponse>(getTeacherSignInUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(teacherSignInRequest),
+  });
+};
+
+export const getTeacherSignInMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof teacherSignIn>>,
+    TError,
+    { data: BodyType<TeacherSignInRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof teacherSignIn>>,
+  TError,
+  { data: BodyType<TeacherSignInRequest> },
+  TContext
+> => {
+  const mutationKey = ["teacherSignIn"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof teacherSignIn>>,
+    { data: BodyType<TeacherSignInRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return teacherSignIn(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TeacherSignInMutationResult = NonNullable<
+  Awaited<ReturnType<typeof teacherSignIn>>
+>;
+export type TeacherSignInMutationBody = BodyType<TeacherSignInRequest>;
+export type TeacherSignInMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Teacher sign in
+ */
+export const useTeacherSignIn = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof teacherSignIn>>,
+    TError,
+    { data: BodyType<TeacherSignInRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof teacherSignIn>>,
+  TError,
+  { data: BodyType<TeacherSignInRequest> },
+  TContext
+> => {
+  return useMutation(getTeacherSignInMutationOptions(options));
+};
+
+/**
+ * @summary Auditor registration
+ */
+export const getAuditorSignUpUrl = () => {
+  return `/api/auditor/signup`;
+};
+
+export const auditorSignUp = async (
+  auditorSignUpRequest: AuditorSignUpRequest,
+  options?: RequestInit,
+): Promise<AuditorSignInResponse> => {
+  return customFetch<AuditorSignInResponse>(getAuditorSignUpUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(auditorSignUpRequest),
+  });
+};
+
+export const getAuditorSignUpMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof auditorSignUp>>,
+    TError,
+    { data: BodyType<AuditorSignUpRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof auditorSignUp>>,
+  TError,
+  { data: BodyType<AuditorSignUpRequest> },
+  TContext
+> => {
+  const mutationKey = ["auditorSignUp"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof auditorSignUp>>,
+    { data: BodyType<AuditorSignUpRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return auditorSignUp(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AuditorSignUpMutationResult = NonNullable<
+  Awaited<ReturnType<typeof auditorSignUp>>
+>;
+export type AuditorSignUpMutationBody = BodyType<AuditorSignUpRequest>;
+export type AuditorSignUpMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Auditor registration
+ */
+export const useAuditorSignUp = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof auditorSignUp>>,
+    TError,
+    { data: BodyType<AuditorSignUpRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof auditorSignUp>>,
+  TError,
+  { data: BodyType<AuditorSignUpRequest> },
+  TContext
+> => {
+  return useMutation(getAuditorSignUpMutationOptions(options));
+};
 
 /**
  * @summary Auditor sign in

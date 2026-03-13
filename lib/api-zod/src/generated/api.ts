@@ -147,6 +147,38 @@ export const GetTrustScoreResponse = zod.object({
 });
 
 /**
+ * @summary Teacher registration
+ */
+export const TeacherSignUpBody = zod.object({
+  username: zod.string(),
+  password: zod.string(),
+  fullName: zod.string(),
+});
+
+/**
+ * @summary Teacher sign in
+ */
+export const TeacherSignInBody = zod.object({
+  username: zod.string(),
+  password: zod.string(),
+});
+
+export const TeacherSignInResponse = zod.object({
+  token: zod.string(),
+  username: zod.string(),
+  fullName: zod.string(),
+});
+
+/**
+ * @summary Auditor registration
+ */
+export const AuditorSignUpBody = zod.object({
+  username: zod.string(),
+  password: zod.string(),
+  fullName: zod.string(),
+});
+
+/**
  * @summary Auditor sign in
  */
 export const AuditorSignInBody = zod.object({

@@ -17,6 +17,8 @@ tags:
     description: Violation logging
   - name: auditor
     description: Auditor dashboard
+  - name: teacher
+    description: Teacher authentication
 paths:
   /healthz:
     get:
@@ -156,6 +158,81 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TrustScoreResponse"
+
+  /teacher/signup:
+    post:
+      operationId: teacherSignUp
+      tags: [teacher]
+      summary: Teacher registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeacherSignUpRequest"
+      responses:
+        "201":
+          description: Registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeacherAuthResponse"
+        "409":
+          description: Username already taken
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /teacher/signin:
+    post:
+      operationId: teacherSignIn
+      tags: [teacher]
+      summary: Teacher sign in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeacherSignInRequest"
+      responses:
+        "200":
+          description: Signed in successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeacherAuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auditor/signup:
+    post:
+      operationId: auditorSignUp
+      tags: [auditor]
+      summary: Auditor registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuditorSignUpRequest"
+      responses:
+        "201":
+          description: Registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditorSignInResponse"
+        "409":
+          description: Username already taken
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /auditor/signin:
     post:
@@ -381,6 +458,48 @@ components:
               type: integer
           required: [tabSwitches, windowResizes, keyboardAttempts, idleDetections]
       required: [studentId, usn, studentName, trustScore, breakdown]
+
+    TeacherSignUpRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        fullName:
+          type: string
+      required: [username, password, fullName]
+
+    TeacherSignInRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required: [username, password]
+
+    TeacherAuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        username:
+          type: string
+        fullName:
+          type: string
+      required: [token, username, fullName]
+
+    AuditorSignUpRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        fullName:
+          type: string
+      required: [username, password, fullName]
 
     AuditorSignInRequest:
       type: object
