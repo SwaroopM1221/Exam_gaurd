@@ -155,23 +155,36 @@ export function useExamMonitor(sessionId: number | undefined, studentId: number 
         const checkAudio = () => {
           if (!analyzer) return;
           analyzer.getByteFrequencyData(dataArray);
+          
+          // 1. Calculate Average Volume
           let sum = 0;
+          let peaks = 0;
           for (let i = 0; i < bufferLength; i++) {
             sum += dataArray[i];
+            // Detect frequency peaks
+            if (dataArray[i] > 128) peaks++;
           }
           const average = sum / bufferLength;
 
-          // Threshold for "violence" (voice detection)
-          // Average > 40-50 is usually indicative of clear speech/noise
-          if (average > 45 && !voiceLogThrottle) {
+          // 2. Multi-Speaker Heuristic: Spectral Complexity
+          // Multiple voices talking at once create more "noise" across the spectrum
+          // than a single voice which has more defined peaks.
+          const complexity = peaks / bufferLength;
+
+          // Thresholds:
+          // Average > 40: Detects clear sound
+          // Complexity > 0.15: Heuristic indicating multiple overlapping sound sources (voices)
+          if (average > 40 && complexity > 0.15 && !voiceLogThrottle) {
             voiceLogThrottle = true;
             logViolation({ data: {
               sessionId,
               studentId,
-              type: "VOICE_DETECTED",
-              metadata: { volume: Math.round(average) }
+              type: "MULTIPLE_VOICES_DETECTED",
+              metadata: { 
+                volume: Math.round(average),
+                complexityScore: Math.round(complexity * 100)
+              }
             }});
-            // Throttle voice logs to avoid spamming the server (max once every 5 seconds)
             setTimeout(() => { voiceLogThrottle = false; }, 5000);
           }
           requestAnimationFrame(checkAudio);

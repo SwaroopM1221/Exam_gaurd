@@ -82,12 +82,14 @@ router.get("/students/:studentId/trust-score", async (req, res) => {
   const windowResizes = violations.filter(v => v.type === "WINDOW_RESIZE").length;
   const keyboardAttempts = violations.filter(v => v.type === "KEYBOARD_ATTEMPT").length;
   const idleDetections = violations.filter(v => v.type === "IDLE_DETECTED").length;
+  const multiVoiceDetections = violations.filter(v => v.type === "MULTIPLE_VOICES_DETECTED").length;
   
   let score = 100;
   score -= tabSwitches * 10;
   score -= windowResizes * 5;
   score -= keyboardAttempts * 15;
   score -= idleDetections * 5;
+  score -= multiVoiceDetections * 15;
   score = Math.max(0, score);
   
   return res.json({
@@ -95,7 +97,7 @@ router.get("/students/:studentId/trust-score", async (req, res) => {
     usn: student.usn,
     studentName: student.studentName,
     trustScore: score,
-    breakdown: { tabSwitches, windowResizes, keyboardAttempts, idleDetections },
+    breakdown: { tabSwitches, windowResizes, keyboardAttempts, idleDetections, multiVoiceDetections },
   });
 });
 

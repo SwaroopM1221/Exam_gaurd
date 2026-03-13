@@ -435,7 +435,7 @@ components:
           type: integer
         type:
           type: string
-          enum: [TAB_SWITCH, WINDOW_RESIZE, KEYBOARD_ATTEMPT, IDLE_DETECTED, VOICE_DETECTED]
+          enum: [TAB_SWITCH, WINDOW_RESIZE, KEYBOARD_ATTEMPT, IDLE_DETECTED, MULTIPLE_VOICES_DETECTED]
         metadata:
           type: object
 
@@ -530,7 +530,9 @@ components:
               type: integer
             idleDetections:
               type: integer
-          required: [tabSwitches, windowResizes, keyboardAttempts, idleDetections]
+            voiceDetections:
+              type: integer
+          required: [tabSwitches, windowResizes, keyboardAttempts, idleDetections, voiceDetections]
       required: [studentId, usn, studentName, trustScore, breakdown]
 
     TeacherSignUpRequest:
@@ -629,7 +631,9 @@ components:
               type: integer
             idleDetections:
               type: integer
-          required: [tabSwitches, windowResizes, keyboardAttempts, idleDetections]
+            voiceDetections:
+              type: integer
+          required: [tabSwitches, windowResizes, keyboardAttempts, idleDetections, voiceDetections]
       required: [sessionId, studentId, usn, studentName, examId, examTitle, joinCode, trustScore, violationCount, joinedAt, status]
 
     AuditorSessionsResponse:

@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { useAuditorSignIn, useAuditorSignUp, useGetAuditorExams, useGetAuditorSessions, useGetStudentLogs, customFetch } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Search, ShieldAlert, MonitorOff, Keyboard, MousePointerClick, ChevronRight, X, User, LogIn, UserPlus, LogOut, CheckCircle2, Download, FileText, FileDown, Clock } from "lucide-react";
+import { Search, ShieldAlert, MonitorOff, Keyboard, MousePointerClick, ChevronRight, X, User, LogIn, UserPlus, LogOut, CheckCircle2, Download, FileText, FileDown, Clock, Mic } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function AuditorDashboard() {
@@ -134,6 +134,7 @@ function DashboardView({ username, onLogout }: { username: string | null; onLogo
       "Window Resizes",
       "Keyboard Attempts",
       "Idle Detections",
+      "Audio Violations",
       "Trust Score (%)"
     ];
     const rows = filteredSessions.map((s: any) => [
@@ -147,6 +148,7 @@ function DashboardView({ username, onLogout }: { username: string | null; onLogo
       s.violationBreakdown?.windowResizes ?? 0,
       s.violationBreakdown?.keyboardAttempts ?? 0,
       s.violationBreakdown?.idleDetections ?? 0,
+      s.violationBreakdown?.multiVoiceDetections ?? 0,
       s.trustScore
     ]);
 
@@ -386,6 +388,7 @@ function StudentLogPanel({ sessionId, studentName, usn, onClose }: { sessionId: 
       case "KEYBOARD_ATTEMPT": return <Keyboard className="w-4 h-4 text-rose-500" />;
       case "WINDOW_RESIZE": return <MonitorOff className="w-4 h-4 text-blue-500" />;
       case "IDLE_DETECTED": return <MousePointerClick className="w-4 h-4 text-slate-400" />;
+      case "MULTIPLE_VOICES_DETECTED": return <Mic className="w-4 h-4 text-orange-500" />;
       default: return <ShieldAlert className="w-4 h-4 text-primary" />;
     }
   };
@@ -400,6 +403,8 @@ function StudentLogPanel({ sessionId, studentName, usn, onClose }: { sessionId: 
         return `Resized to ${v.metadata.windowSize}`;
       case "IDLE_DETECTED":
         return `Inactive for ${v.metadata.idleDurationSeconds}s`;
+      case "MULTIPLE_VOICES_DETECTED":
+        return `Multiple speakers detected (Complexity: ${v.metadata.complexityScore}%)`;
       default:
         return JSON.stringify(v.metadata);
     }
