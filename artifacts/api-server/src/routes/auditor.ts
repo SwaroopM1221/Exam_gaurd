@@ -77,7 +77,7 @@ router.get("/sessions", async (req, res) => {
       trustScore -= windowResizes * 5;
       trustScore -= keyboardAttempts * 15;
       trustScore -= idleDetections * 5;
-      trustScore -= multiVoiceDetections * 15; // Higher penalty for multiple voices
+      trustScore -= multiVoiceDetections * 10; // Penalty of 10 for overlapping voices
       trustScore = Math.max(0, trustScore);
 
       return {
