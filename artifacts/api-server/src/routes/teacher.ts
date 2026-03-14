@@ -119,7 +119,7 @@ router.get("/exams/:examId/sessions", async (req, res) => {
       trustScore -= windowResizes * 5;
       trustScore -= keyboardAttempts * 15;
       trustScore -= idleDetections * 5;
-      trustScore -= voiceDetections * 20;
+      trustScore -= multiVoiceDetections * 10;
       trustScore = Math.max(0, trustScore);
 
       return {

@@ -89,7 +89,7 @@ router.get("/students/:studentId/trust-score", async (req, res) => {
   score -= windowResizes * 5;
   score -= keyboardAttempts * 15;
   score -= idleDetections * 5;
-  score -= multiVoiceDetections * 15;
+  score -= multiVoiceDetections * 10;
   score = Math.max(0, score);
   
   return res.json({

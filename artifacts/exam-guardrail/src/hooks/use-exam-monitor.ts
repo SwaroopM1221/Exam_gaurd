@@ -158,23 +158,25 @@ export function useExamMonitor(sessionId: number | undefined, studentId: number 
           
           // 1. Calculate Average Volume
           let sum = 0;
-          let peaks = 0;
           for (let i = 0; i < bufferLength; i++) {
             sum += dataArray[i];
-            // Detect frequency peaks
-            if (dataArray[i] > 128) peaks++;
           }
           const average = sum / bufferLength;
 
-          // 2. Multi-Speaker Heuristic: Spectral Complexity
-          // Multiple voices talking at once create more "noise" across the spectrum
-          // than a single voice which has more defined peaks.
+          // 2. Multi-Speaker Heuristic: Spectral Complexity & Overlapping Voices
+          // Look for significant peaks relative to the average volume.
+          // Overlapping voices create more noise/peaks across the frequency spectrum.
+          let peaks = 0;
+          const peakThreshold = Math.max(average + 20, 50); // Dynamic threshold with a floor
+          for (let i = 0; i < bufferLength; i++) {
+            if (dataArray[i] > peakThreshold) peaks++;
+          }
           const complexity = peaks / bufferLength;
 
-          // Thresholds:
-          // Average > 40: Detects clear sound
-          // Complexity > 0.15: Heuristic indicating multiple overlapping sound sources (voices)
-          if (average > 40 && complexity > 0.15 && !voiceLogThrottle) {
+          // Adjusted Thresholds:
+          // Average > 30: Detects audible sound
+          // Complexity > 0.22: More sensitive to overlapping voices (lowered from 0.35)
+          if (average > 30 && complexity > 0.22 && !voiceLogThrottle) {
             voiceLogThrottle = true;
             logViolation({ data: {
               sessionId,
@@ -182,7 +184,8 @@ export function useExamMonitor(sessionId: number | undefined, studentId: number 
               type: "MULTIPLE_VOICES_DETECTED",
               metadata: { 
                 volume: Math.round(average),
-                complexityScore: Math.round(complexity * 100)
+                complexityScore: Math.round(complexity * 100),
+                detectionType: "VOICE_OVERLAP"
               }
             }});
             setTimeout(() => { voiceLogThrottle = false; }, 5000);
